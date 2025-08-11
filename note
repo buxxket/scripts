@@ -1,0 +1,31 @@
+#!/bin/bash
+
+dir=~/notes
+mkdir -p "$dir"
+timestamp=$(date +"%y-%m-%d-%a-%H-%M")
+pretty_date=$(date +"$(date +%-d)$(date +%-d | awk '{print ($1==1||$1==21||$1==31) ? "st" : ($1==2||$1==22) ? "nd" : ($1==3||$1==23) ? "rd" : "th"}') of %B, %Y")
+
+if [[ -n "$1" ]]; then
+	file="$1"
+else
+	file="$dir/${timestamp}.md"
+fi
+
+echo ""              >> $file
+echo "*$pretty_date*" >> $file
+echo ""              >> $file
+echo "---"           >> $file
+echo ""              >> $file
+
+$EDITOR "$file"
+
+title=$(grep -m 1 '^# ' "$file" | sed 's/^# *//' | tr '[:space:]' '-' | tr -cd '[:alnum:]')
+
+if [[ -n "$title" ]]; then
+	newfile="${dir}/${title}.md"
+	mv "$file" "$newfile"
+	echo "Renamed to: $(basename "$newfile")"
+else
+	echo "Kept as: $(basename "$file")"
+fi
+

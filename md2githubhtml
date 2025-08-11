@@ -1,0 +1,83 @@
+#!/bin/bash
+
+TITLE=""
+while getopts "t:" opt; do
+  case $opt in
+    t)
+      TITLE="$OPTARG"
+      ;;
+    *)
+      echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+INPUT="${1:?Usage: $0 [-t \"Custom Title\"] input.md [output.html]}"
+
+if echo "$INPUT" | awk '/\.md$/ {exit 1} {exit 0}'; then
+    echo "Not a markdown file."
+    exit 1
+fi
+
+OUTPUT="${2:-${INPUT%.md}.html}"
+OUTDIR="$(dirname "$OUTPUT")"
+# CSS="$OUTDIR/.github-markdown.css"
+
+# if [ ! -f "$CSS" ]; then
+  # echo "Downloading github-markdown.css to $CSS..."
+  # curl -sSL -o "$CSS" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
+# fi
+
+CSS_PATH="$HOME/.markdown/templates/github-markdown.css"
+CSS_CONTENT="$(cat "$CSS_PATH")"
+
+read -r -d '' TEMPLATE <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>\$title\$</title>
+  <style>
+$CSS_CONTENT
+  </style>
+  <style>
+    body {
+      background: #0D1117 !important; /* Match GitHub dark mode markdown background */
+      box-sizing: border-box; min-width:200px; max-width:980px; margin:0 auto; padding:45px;
+    }
+    h1#doc-title {
+      color: #C9D1D9 !important; /* Match GitHub dark mode heading color */
+      font-size: 2.25em;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 0.5em;
+      margin-top: 0.5em;
+    }
+  </style>
+</head>
+<body>
+<h1 id="doc-title">\$title\$</h1>
+<div class="markdown-body">
+\$body\$
+</div>
+</body>
+</html>
+EOF
+
+TEMPLATE_FILE=$(mktemp)
+echo "$TEMPLATE" > "$TEMPLATE_FILE"
+
+if [ -n "$TITLE" ]; then
+  META_TITLE="$TITLE"
+else
+  META_TITLE="$(basename $INPUT)"
+fi
+
+pandoc "$INPUT" --embed-resources --standalone --metadata title="$META_TITLE" --template="$TEMPLATE_FILE" -o "$OUTPUT"
+
+echo "Converted $INPUT to $OUTPUT"
+echo "Title: $META_TITLE"
+
+rm "$TEMPLATE_FILE"

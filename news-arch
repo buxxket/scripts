@@ -1,0 +1,231 @@
+#!/bin/bash
+
+  FEED_URL="https://archlinux.org/feeds/news/"
+  DB="$HOME/.cache/news/news_read_arch.db"
+  CACHE_FILE="$HOME/.cache/news/news_feed_arch.xml"
+  CACHE_TTL=1800  # 30 minutes cache
+
+  SHOW_ALL=0
+  LIMIT=""
+  NO_COLOR=0
+  UNREAD_REMOVE=0
+  RESET_ALL=0
+  MARK_ALL_READ=0
+  SHOW_ALL_AND_MARK_READ=0
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -a) SHOW_ALL=1; shift ;;
+      -l) LIMIT="$2"; shift 2 ;;
+      -n) NO_COLOR=1; shift ;;
+      -u) UNREAD_REMOVE="$2"; shift 2 ;;
+      -r) RESET_ALL=1; shift ;;
+      -m) MARK_ALL_READ=1; shift ;;
+      -A) SHOW_ALL_AND_MARK_READ=1; shift ;;
+      *) echo "Usage: news [-a] [-l <count>] [-n] [-u <count>] [-r] [-m] [-A]"; return 1 ;;
+    esac
+  done
+
+  # Create table if missing
+  sqlite3 "$DB" "CREATE TABLE IF NOT EXISTS read_guids (guid TEXT PRIMARY KEY, read_time INTEGER);"
+
+  if (( RESET_ALL )); then
+    sqlite3 "$DB" "DELETE FROM read_guids;"
+    echo "All news marked as unread."
+    return 0
+  fi
+
+  if (( UNREAD_REMOVE > 0 )); then
+    python3 - "$DB" "$UNREAD_REMOVE" <<'EOF'
+import sys, sqlite3
+db, n_str = sys.argv[1], sys.argv[2]
+n = int(n_str)
+conn = sqlite3.connect(db)
+cur = conn.cursor()
+cur.execute("SELECT guid FROM read_guids ORDER BY read_time DESC LIMIT ?", (n,))
+to_remove = cur.fetchall()
+if not to_remove:
+    print(f"Marked 0 latest news as unread.")
+    sys.exit(0)
+for (guid,) in to_remove:
+    cur.execute("DELETE FROM read_guids WHERE guid=?", (guid,))
+conn.commit()
+print(f"Marked {len(to_remove)} latest news as unread.")
+EOF
+    return 0
+  fi
+
+  if (( MARK_ALL_READ )); then
+    python3 - "$FEED_URL" "$DB" "$CACHE_FILE" "$CACHE_TTL" <<'EOF'
+import sys, os, time, sqlite3, requests, feedparser
+
+url, db, cache_file, cache_ttl = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+
+def fetch_feed(url, cache_file, cache_ttl):
+    headers = {"User-Agent": "news-script/1.0 (+https://archlinux.org/)"}
+    use_cache = False
+    if os.path.exists(cache_file):
+        mtime = float(os.path.getmtime(cache_file))
+        if time.time() - mtime < cache_ttl:
+            use_cache = True
+    if use_cache:
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+    else:
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        with open(cache_file, "w", encoding="utf-8") as f:
+            f.write(r.text)
+        return r.text
+
+conn = sqlite3.connect(db)
+cur = conn.cursor()
+
+feed_data = fetch_feed(url, cache_file, cache_ttl)
+feed = feedparser.parse(feed_data)
+
+def get_guid(e):
+    return getattr(e, "id", None) or getattr(e, "link", None) or getattr(e, "title", "")
+
+import time
+
+for e in feed.entries:
+    guid = get_guid(e)
+    cur.execute(
+      "INSERT OR REPLACE INTO read_guids (guid, read_time) VALUES (?, ?)",
+      (guid, int(time.time()))
+    )
+conn.commit()
+print("Marked all news as read.")
+EOF
+    return 0
+  fi
+
+  if (( SHOW_ALL_AND_MARK_READ )); then
+    SHOW_ALL=1
+  fi
+
+  python3 - "$FEED_URL" "$DB" "$CACHE_FILE" "$CACHE_TTL" "${SHOW_ALL}" "${LIMIT:-0}" "${NO_COLOR}" <<'EOF'
+import sys, os, time, sqlite3, textwrap, re, calendar
+from html import unescape
+from datetime import datetime
+import requests
+import feedparser
+
+url, db, cache_file, cache_ttl, show_all, limit, no_color = (
+    sys.argv[1],
+    sys.argv[2],
+    sys.argv[3],
+    int(sys.argv[4]),
+    int(sys.argv[5]),
+    int(sys.argv[6]),
+    int(sys.argv[7]),
+)
+
+def c(code): return "" if no_color else code
+COL = {
+    "reset": "\033[0m",
+    "title": "\033[38;5;4m",
+    "link":  "\033[38;5;109m",
+    "date":  "\033[38;5;109m",
+    "summary": "\033[37m",
+    "notice": "\033[0m"
+}
+def paint(s, which): return f"{c(COL[which])}{s}{c(COL['reset'])}"
+
+def strip_html(s):
+    return unescape(re.sub(r"<[^>]+>", "", s or "").strip())
+
+def fmt_date(e):
+    for k in ("published", "updated"):
+        if hasattr(e, k):
+            return getattr(e, k)
+    if hasattr(e, "published_parsed") and e.published_parsed:
+        return datetime(*e.published_parsed[:6]).isoformat()
+    return ""
+
+def get_guid(e):
+    return getattr(e, "id", None) or getattr(e, "link", None) or getattr(e, "title", "")
+
+def fetch_feed(url, cache_file, cache_ttl):
+    headers = {
+        "User-Agent": "news-script/1.0 (+https://archlinux.org/)"
+    }
+    use_cache = False
+    if os.path.exists(cache_file):
+        mtime = float(os.path.getmtime(cache_file))
+        if time.time() - mtime < cache_ttl:
+            use_cache = True
+    if use_cache:
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+    else:
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        with open(cache_file, "w", encoding="utf-8") as f:
+            f.write(r.text)
+        return r.text
+
+conn = sqlite3.connect(db)
+cur = conn.cursor()
+
+feed_data = fetch_feed(url, cache_file, cache_ttl)
+feed = feedparser.parse(feed_data)
+
+def to_timestamp(e):
+    t = getattr(e, "published_parsed", None) or getattr(e, "updated_parsed", None)
+    if t is None:
+        return 0
+    return calendar.timegm(t)
+
+entries = feed.entries
+entries.sort(key=to_timestamp, reverse=True)
+
+if limit > 0:
+    entries = entries[:limit]
+    show_all = 1
+elif not show_all:
+    tmp = []
+    for e in entries:
+        guid = get_guid(e)
+        if not cur.execute("SELECT 1 FROM read_guids WHERE guid=?", (guid,)).fetchone():
+            tmp.append(e)
+        if len(tmp) == 5:
+            break
+    entries = tmp
+
+if not entries:
+    msg = "No news available" if show_all or limit > 0 else "No unread news"
+    print(paint(msg, "notice"))
+    sys.exit(0)
+
+width = 100
+divider = "─" * width
+wrap = lambda txt: textwrap.fill(txt, width=width, subsequent_indent="  ")
+
+for e in entries:
+    title = getattr(e, "title", "(no title)")
+    link  = getattr(e, "link", "")
+    date  = fmt_date(e)
+    summary = strip_html(getattr(e, "summary", ""))
+
+    print(divider)
+    print(paint(title, "title"))
+    if link:
+        print(paint(link, "link"))
+    if date:
+        print(paint(date, "date"))
+    if summary:
+        print()
+        print(paint(wrap(summary), "summary"))
+    print()
+
+    # Mark as read unless showing all (unless using -A option which sets show_all=1 but we want to mark read anyway)
+    if not show_all or (show_all and int(sys.argv[5]) == 1):
+        cur.execute(
+          "INSERT OR REPLACE INTO read_guids (guid, read_time) VALUES (?, ?)",
+          (get_guid(e), int(time.time()))
+        )
+
+conn.commit()
+EOF
