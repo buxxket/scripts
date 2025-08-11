@@ -1,0 +1,15 @@
+#!/bin/bash
+
+dir_scripts="$HOME/scripts"
+dir_bin="$HOME/bin"
+
+for script in *; do
+    # Skip unwanted files
+    if [[ "$script" == "install" || "$script" == ".git" || "$script" == "README.md" ]]; then
+        continue
+    fi
+    if [[ -f "$script" ]]; then
+        chmod +x "$script"
+        ln -sf "$PWD/$script" "$dir_bin/"
+    fi
+done
