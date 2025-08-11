@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Convert a markdown document to github-style html
+
 TITLE=""
 while getopts "t:" opt; do
   case $opt in
@@ -23,14 +25,15 @@ fi
 
 OUTPUT="${2:-${INPUT%.md}.html}"
 OUTDIR="$(dirname "$OUTPUT")"
-# CSS="$OUTDIR/.github-markdown.css"
-
-# if [ ! -f "$CSS" ]; then
-  # echo "Downloading github-markdown.css to $CSS..."
-  # curl -sSL -o "$CSS" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
-# fi
-
 CSS_PATH="$HOME/.markdown/templates/github-markdown.css"
+
+mkdir -p "$(dirname "$CSS_PATH")"
+
+if [ ! -f "$CSS_PATH" ]; then
+  echo "Downloading github-markdown.css to $CSS_PATH..."
+  curl -sSL -o "$CSS_PATH" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
+fi
+
 CSS_CONTENT="$(cat "$CSS_PATH")"
 
 read -r -d '' TEMPLATE <<EOF
