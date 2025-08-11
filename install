@@ -1,6 +1,5 @@
 #!/bin/bash
 
-dir_scripts="$HOME/scripts"
 dir_bin="$HOME/bin"
 
 for script in *; do
