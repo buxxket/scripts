@@ -1,31 +1,50 @@
 #!/bin/bash
 
+# Directory for notes
 dir=~/notes
 mkdir -p "$dir"
+
+# Generate timestamps and pretty date
 timestamp=$(date +"%y-%m-%d-%a-%H-%M")
-pretty_date=$(date +"$(date +%-d)$(date +%-d | awk '{print ($1==1||$1==21||$1==31) ? "st" : ($1==2||$1==22) ? "nd" : ($1==3||$1==23) ? "rd" : "th"}') of %B, %Y")
+day=$(date +%-d)
+suffix=$(echo $day | awk '{print ($1==1||$1==21||$1==31)?"st":($1==2||$1==22)?"nd":($1==3||$1==23)?"rd":"th"}')
+pretty_date="${day}${suffix} of $(date +%B), $(date +%Y)"
+
+rename=0
 
 if [[ -n "$1" ]]; then
-	file="$1"
+    file="$1"
+    dir="$(dirname "$1")"
 else
-	file="$dir/${timestamp}.md"
+    file="$dir/${timestamp}.md"
+    rename=1
 fi
 
-echo ""              >> $file
-echo "*$pretty_date*" >> $file
-echo ""              >> $file
-echo "---"           >> $file
-echo ""              >> $file
+# Ensure file exists and append header if new
+if [[ ! -f "$file" ]] || [[ $rename -eq 1 ]]; then
+    {
+        echo ""
+        echo "*$pretty_date*"
+        echo ""
+        echo "---"
+        echo ""
+    } >> "$file"
+fi
 
+# Open file in editor
+: "${EDITOR:=nano}"  # Default to nano if $EDITOR not set
 $EDITOR "$file"
 
-title=$(grep -m 1 '^# ' "$file" | sed 's/^# *//' | tr '[:space:]' '-' | tr -cd '[:alnum:]')
+# Get first Markdown header as title and slugify
+title=$(grep -m 1 '^# ' "$file" | sed 's/^# *//' | tr '[:space:]' '-' | tr -cd '[:alnum:]-')
 
-if [[ -n "$title" ]]; then
-	newfile="${dir}/${title}.md"
-	mv "$file" "$newfile"
-	echo "Renamed to: $(basename "$newfile")"
-else
-	echo "Kept as: $(basename "$file")"
+# Rename file if needed
+if [[ $rename -eq 1 ]]; then
+    if [[ -n "$title" ]]; then
+        newfile="${dir}/${title}.md"
+        mv "$file" "$newfile"
+        echo "Renamed to: $(basename "$newfile")"
+    else
+        echo "Kept as: $(basename "$file")"
+    fi
 fi
-
