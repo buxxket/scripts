@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Launch slock in the background
+slock &
+
+# Save its PID
+SLOCK_PID=$!
+
+# Wait for slock to finish (i.e., you unlock)
+wait $SLOCK_PID
+
+# Run your command here
+# Example: notify-send "Unlocked!" or run any other command
+xset dpms 600 600 600
