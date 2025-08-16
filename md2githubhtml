@@ -1,40 +1,46 @@
 #!/bin/bash
 
-# Convert a markdown document to github-style html
+# Usage: md2githubhtml [-t "Custom Title"] input.md [output.html]
+# set -e
 
 TITLE=""
 while getopts "t:" opt; do
   case $opt in
-    t)
-      TITLE="$OPTARG"
-      ;;
-    *)
-      echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"
-      exit 1
-      ;;
+    t) TITLE="$OPTARG" ;;
+    *) echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"; exit 1 ;;
   esac
 done
 shift $((OPTIND -1))
 
-INPUT="${1:?Usage: $0 [-t \"Custom Title\"] input.md [output.html]}"
-
-if echo "$INPUT" | awk '/\.md$/ {exit 1} {exit 0}'; then
-    echo "Not a markdown file."
-    exit 1
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"
+  exit 1
 fi
 
-OUTPUT="${2:-${INPUT%.md}.html}"
-OUTDIR="$(dirname "$OUTPUT")"
-CSS_PATH="$HOME/.markdown/templates/github-markdown.css"
+INPUT="$1"
+INPUT_ABS="$(cd "$(dirname "$INPUT")"; pwd)/$(basename "$INPUT")"
+INPUT_DIR="$(dirname "$INPUT_ABS")"
+INPUT_BASE="$(basename "$INPUT_ABS" .md)"
+OUTPUT="${2:-$INPUT_DIR/$INPUT_BASE.html}"
 
-mkdir -p "$(dirname "$CSS_PATH")"
+TEMPLATEDIR="$HOME/.markdown/templates"
+mkdir -p "$TEMPLATEDIR"
+MARKDOWN_CSS="$TEMPLATEDIR/github-markdown.css"
+CALLOUT_CSS="$TEMPLATEDIR/github-callouts.css"
+CALLOUT_LUA="$TEMPLATEDIR/callout.lua"
 
-if [ ! -f "$CSS_PATH" ]; then
-  echo "Downloading github-markdown.css to $CSS_PATH..."
-  curl -sSL -o "$CSS_PATH" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
+if [ ! -f "$MARKDOWN_CSS" ]; then
+  echo "Downloading github-markdown.css → $MARKDOWN_CSS"
+  curl -sSL -o "$MARKDOWN_CSS" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
 fi
-
-CSS_CONTENT="$(cat "$CSS_PATH")"
+if [ ! -f "$CALLOUT_CSS" ]; then
+  echo "Downloading github-callouts.css → $CALLOUT_CSS"
+  curl -sSL -o "$CALLOUT_CSS" "https://raw.githubusercontent.com/buxxket/github-callout-css/refs/heads/main/github-callouts.css"
+fi
+if [ ! -f "$CALLOUT_LUA" ]; then
+  echo "Downloading callout.lua → $CALLOUT_LUA"
+  curl -sSL -o "$CALLOUT_LUA" "https://raw.githubusercontent.com/buxxket/github-callout-css/refs/heads/main/callout.lua"
+fi
 
 read -r -d '' TEMPLATE <<EOF
 <!DOCTYPE html>
@@ -42,16 +48,15 @@ read -r -d '' TEMPLATE <<EOF
 <head>
   <meta charset="utf-8"/>
   <title>\$title\$</title>
-  <style>
-$CSS_CONTENT
-  </style>
+  <link rel="stylesheet" href="$MARKDOWN_CSS">
+  <link rel="stylesheet" href="$CALLOUT_CSS">
   <style>
     body {
-      background: #0D1117 !important; /* Match GitHub dark mode markdown background */
+      background: #0D1117 !important;
       box-sizing: border-box; min-width:200px; max-width:980px; margin:0 auto; padding:45px;
     }
     h1#doc-title {
-      color: #C9D1D9 !important; /* Match GitHub dark mode heading color */
+      color: #C9D1D9 !important;
       font-size: 2.25em;
       font-weight: 600;
       line-height: 1.2;
@@ -75,12 +80,17 @@ echo "$TEMPLATE" > "$TEMPLATE_FILE"
 if [ -n "$TITLE" ]; then
   META_TITLE="$TITLE"
 else
-  META_TITLE="$(basename $INPUT)"
+  META_TITLE="${INPUT_BASE}"
 fi
 
-pandoc "$INPUT" --embed-resources --standalone --metadata title="$META_TITLE" --template="$TEMPLATE_FILE" -o "$OUTPUT"
+pandoc "$INPUT_ABS" --metadata title="$META_TITLE" \
+  --template="$TEMPLATE_FILE" \
+  --lua-filter="$CALLOUT_LUA" \
+  --embed-resources \
+  --standalone \
+  -o "$OUTPUT"
 
 echo "Converted $INPUT to $OUTPUT"
-echo "Title: $META_TITLE"
+echo "Output file: $OUTPUT"
 
 rm "$TEMPLATE_FILE"
