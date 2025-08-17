@@ -22,7 +22,7 @@
       -r) RESET_ALL=1; shift ;;
       -m) MARK_ALL_READ=1; shift ;;
       -A) SHOW_ALL_AND_MARK_READ=1; shift ;;
-      *) echo "Usage: news [-a] [-l <count>] [-n] [-u <count>] [-r] [-m] [-A]"; return 1 ;;
+      *) echo "Usage: news [-a] [-l <count>] [-n] [-u <count>] [-r] [-m] [-A]"; exit 1 ;;
     esac
   done
 
@@ -32,7 +32,7 @@
   if (( RESET_ALL )); then
     sqlite3 "$DB" "DELETE FROM read_guids;"
     echo "All news marked as unread."
-    return 0
+    exit 0
   fi
 
   if (( UNREAD_REMOVE > 0 )); then
