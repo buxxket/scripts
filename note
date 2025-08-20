@@ -47,5 +47,5 @@ if [[ $rename -eq 1 ]]; then
         echo "Renamed to: $(basename "$newfile")"
     else
         echo "Kept as: $(basename "$file")"
-    fi
+	fi
 fi

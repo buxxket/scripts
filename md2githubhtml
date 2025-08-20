@@ -94,3 +94,5 @@ echo "Converted $INPUT to $OUTPUT"
 echo "Output file: $OUTPUT"
 
 rm "$TEMPLATE_FILE"
+
+xdg-open "$OUTPUT"
