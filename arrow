@@ -1,0 +1,11 @@
+#!/bin/bash
+
+ARROW="$1"
+
+case $ARROW in
+	up)	echo ↑ ;;
+	down)	echo ↓ ;;
+	left)	echo ← ;;
+	right)	echo → ;;
+	*)	echo "Enter a direction" && exit 1 ;;
+esac
