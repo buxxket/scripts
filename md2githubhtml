@@ -5,20 +5,26 @@
 
 TITLE=""
 while getopts "t:" opt; do
-  case $opt in
-    t) TITLE="$OPTARG" ;;
-    *) echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"; exit 1 ;;
-  esac
+	case $opt in
+	t) TITLE="$OPTARG" ;;
+	*)
+		echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"
+		exit 1
+		;;
+	esac
 done
-shift $((OPTIND -1))
+shift $((OPTIND - 1))
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"
-  exit 1
+	echo "Usage: $0 [-t \"Custom Title\"] input.md [output.html]"
+	exit 1
 fi
 
 INPUT="$1"
-INPUT_ABS="$(cd "$(dirname "$INPUT")"; pwd)/$(basename "$INPUT")"
+INPUT_ABS="$(
+	cd "$(dirname "$INPUT")"
+	pwd
+)/$(basename "$INPUT")"
 INPUT_DIR="$(dirname "$INPUT_ABS")"
 INPUT_BASE="$(basename "$INPUT_ABS" .md)"
 OUTPUT="${2:-$INPUT_DIR/$INPUT_BASE.html}"
@@ -30,16 +36,16 @@ CALLOUT_CSS="$TEMPLATEDIR/github-callouts.css"
 CALLOUT_LUA="$TEMPLATEDIR/callout.lua"
 
 if [ ! -f "$MARKDOWN_CSS" ]; then
-  echo "Downloading github-markdown.css → $MARKDOWN_CSS"
-  curl -sSL -o "$MARKDOWN_CSS" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
+	echo "Downloading github-markdown.css → $MARKDOWN_CSS"
+	curl -sSL -o "$MARKDOWN_CSS" "https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
 fi
 if [ ! -f "$CALLOUT_CSS" ]; then
-  echo "Downloading github-callouts.css → $CALLOUT_CSS"
-  curl -sSL -o "$CALLOUT_CSS" "https://raw.githubusercontent.com/buxxket/github-callout-css/refs/heads/main/github-callouts.css"
+	echo "Downloading github-callouts.css → $CALLOUT_CSS"
+	curl -sSL -o "$CALLOUT_CSS" "https://raw.githubusercontent.com/buxxket/github-callout-css/refs/heads/main/github-callouts.css"
 fi
 if [ ! -f "$CALLOUT_LUA" ]; then
-  echo "Downloading callout.lua → $CALLOUT_LUA"
-  curl -sSL -o "$CALLOUT_LUA" "https://raw.githubusercontent.com/buxxket/github-callout-css/refs/heads/main/callout.lua"
+	echo "Downloading callout.lua → $CALLOUT_LUA"
+	curl -sSL -o "$CALLOUT_LUA" "https://raw.githubusercontent.com/buxxket/github-callout-css/refs/heads/main/callout.lua"
 fi
 
 read -r -d '' TEMPLATE <<EOF
@@ -75,20 +81,24 @@ read -r -d '' TEMPLATE <<EOF
 EOF
 
 TEMPLATE_FILE=$(mktemp)
-echo "$TEMPLATE" > "$TEMPLATE_FILE"
+echo "$TEMPLATE" >"$TEMPLATE_FILE"
 
 if [ -n "$TITLE" ]; then
-  META_TITLE="$TITLE"
+	META_TITLE="$TITLE"
 else
-  META_TITLE="${INPUT_BASE}"
+	META_TITLE="${INPUT_BASE}"
 fi
 
-pandoc "$INPUT_ABS" --metadata title="$META_TITLE" \
-  --template="$TEMPLATE_FILE" \
-  --lua-filter="$CALLOUT_LUA" \
-  --embed-resources \
-  --standalone \
-  -o "$OUTPUT"
+# Remove <!--md2githubhtml--> line before conversion
+FILTERED_MD=$(mktemp)
+grep -v '^<!--md2githubhtml-->' "$INPUT_ABS" >"$FILTERED_MD"
+pandoc "$FILTERED_MD" --metadata title="$META_TITLE" \
+	--template="$TEMPLATE_FILE" \
+	--lua-filter="$CALLOUT_LUA" \
+	--embed-resources \
+	--standalone \
+	-o "$OUTPUT"
+rm "$FILTERED_MD"
 
 echo "Converted $INPUT to $OUTPUT"
 echo "Output file: $OUTPUT"
