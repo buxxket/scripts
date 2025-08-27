@@ -4,11 +4,23 @@
 dir=~/notes
 mkdir -p "$dir"
 
-# Generate timestamps and pretty date
-timestamp=$(date +"%y-%m-%d-%a-%H-%M")
-day=$(date +%-d)
-suffix=$(echo $day | awk '{print ($1==1||$1==21||$1==31)?"st":($1==2||$1==22)?"nd":($1==3||$1==23)?"rd":"th"}')
-pretty_date="${day}${suffix} of $(date +%B), $(date +%Y)"
+show_help() {
+	cat <<EOF
+Usage: $(basename "$0") [note_file]
+If note_file is omitted, a new file with a timestamp will be created.
+If note_file is provided and does not end with .md or .MD, .md will be appended.
+Examples:
+  $(basename "$0") mynote
+  $(basename "$0") ~/notes/study.md
+  $(basename "$0")                # creates a new note
+EOF
+	exit 1
+}
+
+# Check for help flag or error conditions
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+	show_help
+fi
 
 rename=0
 
@@ -16,7 +28,15 @@ if [[ -n "$1" ]]; then
 	file="$1"
 	dir="$(dirname "$1")"
 	mkdir -p "$dir"
+	# If file does not end in .md or .MD, append .md
+	if [[ ! "$file" =~ \.md$ && ! "$file" =~ \.MD$ ]]; then
+		file="${file}.md"
+	fi
 else
+	timestamp=$(date +"%y-%m-%d-%a-%H-%M")
+	day=$(date +%-d)
+	suffix=$(echo $day | awk '{print ($1==1||$1==21||$1==31)?"st":($1==2||$1==22)?"nd":($1==3||$1==23)?"rd":"th"}')
+	pretty_date="${day}${suffix} of $(date +%B), $(date +%Y)"
 	file="$dir/${timestamp}.md"
 	rename=1
 fi
