@@ -3,16 +3,15 @@
 if [[ -n "$1" ]]; then
 	WALLPAPER="$1"
 else
-	FOLDER=~/Pictures/wallpapers/
+	FOLDER=~/pictures/wallpapers/
 	FILE=$(ls "$FOLDER" | shuf -n 1)
 	WALLPAPER=$FOLDER$FILE
 fi
 
-wal -i $WALLPAPER --contrast 4 --saturate 0.4 --cols16 lighten -b 202020
+wal -i $WALLPAPER --contrast 4 --saturate 0.4 --cols16 lighten #-b 202020
 
 feh --bg-scale $WALLPAPER
 
 ln -sf ~/.cache/wal/colors.Xresources ~/.Xresources
 cat ~/.Xresources ~/.cache/wal/xrdb_extra | xrdb -merge
 xdotool key super+ctrl+backslash # xrdb refresh keybind
-
