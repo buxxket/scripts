@@ -92,7 +92,7 @@ fi
 # Remove <!--md2githubhtml--> line before conversion
 FILTERED_MD=$(mktemp)
 grep -v '^<!--md2githubhtml-->' "$INPUT_ABS" >"$FILTERED_MD"
-pandoc "$FILTERED_MD" --metadata title="$META_TITLE" \
+pandoc --from=markdown "$FILTERED_MD" --metadata title="$META_TITLE" \
 	--template="$TEMPLATE_FILE" \
 	--lua-filter="$CALLOUT_LUA" \
 	--embed-resources \
