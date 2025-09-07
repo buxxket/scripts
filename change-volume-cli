@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+SPEAKER_ID="$(wpctl status | grep speaker | grep -oP '\d+(?=\.)' | head -1)"
+if [ -z "$SPEAKER_ID" ]; then
+	SPEAKER_ID="@DEFAULT_SINK@"
+fi
+
+show_volume_bar() {
+	local vol=$1
+	if [[ $vol == "muted" ]]; then
+		dunstify -u low \
+			-h string:x-dunst-stack-tag:volume \
+			-h int:value:0 \
+			"Main volume: $vol"
+	else
+		dunstify -u low \
+			-h string:x-dunst-stack-tag:volume \
+			-h int:value:$vol \
+			"Main volume: $vol%"
+	fi
+}
+
+get_vol() {
+	volstr="$(wpctl get-volume $SPEAKER_ID)"
+	if echo "$volstr" | grep -q '\[MUTED\]'; then
+		vol="muted"
+	else
+		voldec="${volstr#Volume: }"
+		vol="$(printf "%.0f" "$(echo "$voldec * 100" | bc)")"
+	fi
+}
+
+case $1 in
+up) wpctl set-volume $SPEAKER_ID 0.1+ && get_vol && show_volume_bar "$vol" ;;
+down) wpctl set-volume $SPEAKER_ID 0.1- && get_vol && show_volume_bar "$vol" ;;
+mute) wpctl set-mute $SPEAKER_ID toggle && get_vol && show_volume_bar "$vol" ;;
+esac
