@@ -89,10 +89,7 @@ else
 	META_TITLE="${INPUT_BASE}"
 fi
 
-# Remove <!--md2githubhtml--> line before conversion
-FILTERED_MD=$(mktemp)
-grep -v '^<!--md2githubhtml-->' "$INPUT_ABS" >"$FILTERED_MD"
-pandoc --from=markdown "$FILTERED_MD" --metadata title="$META_TITLE" \
+pandoc --from=markdown "$INPUT_ABS" --metadata title="$META_TITLE" \
 	--template="$TEMPLATE_FILE" \
 	--lua-filter="$CALLOUT_LUA" \
 	--embed-resources \
