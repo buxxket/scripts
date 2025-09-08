@@ -4,6 +4,8 @@
 dir=~/notes
 mkdir -p "$dir"
 
+insert_marker=0
+
 show_help() {
 	cat <<EOF
 Usage: $(basename "$0") [note_file]
@@ -36,6 +38,7 @@ if [[ -n "$1" ]]; then
 	if [[ ! "$file" =~ \.md$ && ! "$file" =~ \.MD$ ]]; then
 		file="${file}.md"
 	fi
+	insert_marker=1
 else
 	timestamp=$(date +"%y-%m-%d-%a-%H-%M")
 	file="$dir/${timestamp}.md"
@@ -44,14 +47,16 @@ fi
 
 # Ensure file exists and append header if new
 if [[ ! -f "$file" ]] || [[ $rename -eq 1 ]]; then
-	{
-		echo "<!--md2githubhtml-->"
-		echo ""
-		echo "*$pretty_date*"
-		echo ""
-		echo "---"
-		echo ""
-	} >>"$file"
+	if [[ $insert_marker -eq "1" ]]; then
+		{
+			echo "<!--md2githubhtml-->"
+			echo ""
+			echo "*$pretty_date*"
+			echo ""
+			echo "---"
+			echo ""
+		} >>"$file"
+	fi
 fi
 
 # Open file in editor
