@@ -19,6 +19,6 @@ def excel_to_csv(file_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python excel_to_csv.py <file.xlsx>")
+        print("Usage: excel2csv <file.xlsx>")
         sys.exit(1)
     excel_to_csv(sys.argv[1])
