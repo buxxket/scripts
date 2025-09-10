@@ -4,3 +4,4 @@ teams-for-linux &
 sleep 5
 /opt/outlook-for-linux/outlook-for-linux &
 slack &
+vesktop &
