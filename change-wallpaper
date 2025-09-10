@@ -19,6 +19,7 @@ apply-kitty-theme() {
 	for socket in /tmp/kitty_pywal-*; do
 		if [[ -S "$socket" ]]; then
 			kitty @ --to unix:"$socket" set-colors --all --configured "$THEME_FILE"
+			kitty @ --to "unix:$socket" set-colors color1=#cc6666 color8=#7f7f7f
 		fi
 	done
 }
