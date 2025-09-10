@@ -17,8 +17,18 @@ fill-and-merge() {
 apply-kitty-theme() {
 	local THEME_FILE="$HOME/.cache/wal/colors-kitty.conf"
 
-	# Overwrite the file with your custom colors
-	cat <<EOF >"$THEME_FILE"
+	# First, check if the file exists
+	if [[ -f "$THEME_FILE" ]]; then
+		# Append or replace color1 and color8 at the end of the file
+		# Remove any existing color1 or color8 definitions first
+		sed -i '/^color1 /d' "$THEME_FILE"
+		sed -i '/^color8 /d' "$THEME_FILE"
+	else
+		touch "$THEME_FILE"
+	fi
+
+	# Append custom overrides
+	cat <<EOF >>"$THEME_FILE"
 color1 #cc6666
 color8 #7f7f7f
 EOF
