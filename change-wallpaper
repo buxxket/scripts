@@ -4,7 +4,7 @@ FOLDER=~/pictures/wallpapers/
 USE_RANDOM=0
 
 pywal16() {
-	wal -i $WALLPAPER --cols16 darken --contrast 3 --saturate 0.7
+	wal -i $WALLPAPER --cols16 darken --contrast 3 --saturate 0.7 -s
 }
 
 fill-and-merge() {
@@ -17,21 +17,21 @@ fill-and-merge() {
 apply-kitty-theme() {
 	local THEME_FILE="$HOME/.cache/wal/colors-kitty.conf"
 
-	# First, check if the file exists
-	if [[ -f "$THEME_FILE" ]]; then
-		# Append or replace color1 and color8 at the end of the file
-		# Remove any existing color1 or color8 definitions first
-		sed -i '/^color1 /d' "$THEME_FILE"
-		sed -i '/^color8 /d' "$THEME_FILE"
-	else
-		touch "$THEME_FILE"
-	fi
-
-	# Append custom overrides
-	cat <<EOF >>"$THEME_FILE"
-color1 #cc6666
-color8 #7f7f7f
-EOF
+	# 	# First, check if the file exists
+	# 	if [[ -f "$THEME_FILE" ]]; then
+	# 		# Append or replace color1 and color8 at the end of the file
+	# 		# Remove any existing color1 or color8 definitions first
+	# 		sed -i '/^color1 /d' "$THEME_FILE"
+	# 		sed -i '/^color8 /d' "$THEME_FILE"
+	# 	else
+	# 		touch "$THEME_FILE"
+	# 	fi
+	#
+	# 	# Append custom overrides
+	# 	cat <<EOF >>"$THEME_FILE"
+	# color1 #cc6666
+	# color8 #7f7f7f
+	# EOF
 
 	# Apply to all kitty instances
 	for socket in /tmp/kitty_pywal-*; do
