@@ -11,6 +11,7 @@ fill-and-merge() {
 	feh --bg-fill $1
 	ln -sf ~/.cache/wal/colors.Xresources ~/.Xresources
 	cat ~/.Xresources ~/.cache/wal/xrdb_extra | xrdb -merge
+	echo "Xcursor.size: 24" >> ~/.Xresources
 	xdotool key super+ctrl+backslash # xrdb refresh keybind
 }
 
