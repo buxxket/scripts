@@ -11,30 +11,11 @@ fill-and-merge() {
 	feh --bg-fill $1
 	ln -sf ~/.cache/wal/colors.Xresources ~/.Xresources
 	cat ~/.Xresources ~/.cache/wal/xrdb_extra | xrdb -merge
-	echo "Xcursor.size: 24" >> ~/.Xresources
 	xdotool key super+ctrl+backslash # xrdb refresh keybind
 }
 
 apply-kitty-theme() {
 	local THEME_FILE="$HOME/.cache/wal/colors-kitty.conf"
-
-	# 	# First, check if the file exists
-	# 	if [[ -f "$THEME_FILE" ]]; then
-	# 		# Append or replace color1 and color8 at the end of the file
-	# 		# Remove any existing color1 or color8 definitions first
-	# 		sed -i '/^color1 /d' "$THEME_FILE"
-	# 		sed -i '/^color8 /d' "$THEME_FILE"
-	# 	else
-	# 		touch "$THEME_FILE"
-	# 	fi
-	#
-	# 	# Append custom overrides
-	# 	cat <<EOF >>"$THEME_FILE"
-	# color1 #cc6666
-	# color8 #7f7f7f
-	# EOF
-
-	# Apply to all kitty instances
 	for socket in /tmp/kitty_pywal-*; do
 		if [[ -S "$socket" ]]; then
 			kitty @ --to unix:"$socket" set-colors --all --configured "$THEME_FILE"
