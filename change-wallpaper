@@ -4,7 +4,7 @@ FOLDER=~/pictures/wallpapers/
 USE_RANDOM=0
 
 pywal16() {
-	wal -i $WALLPAPER --cols16 darken --contrast 3 --saturate 0.7 -s
+	wal -i $WALLPAPER --cols16 darken --contrast 4.5 --saturate 0.7 -s
 }
 
 fill-and-merge() {
