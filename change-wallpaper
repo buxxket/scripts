@@ -4,7 +4,8 @@ FOLDER=~/pictures/wallpapers/
 USE_RANDOM=0
 
 pywal16() {
-	wal -i $WALLPAPER --cols16 darken --contrast 4.5 --saturate 0.7 -s
+	# colorz and haishoku
+	wal -i $WALLPAPER --cols16 lighten --contrast 4.5 --saturate 0.6 -s --backend haishoku
 }
 
 fill-and-merge() {
